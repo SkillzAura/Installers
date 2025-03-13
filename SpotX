@@ -1,0 +1,36 @@
+aparam(
+    [Alias("m")]
+    [switch]$mirror
+)
+
+function Run-SpotX {
+    param([string]$params)
+
+    $maxRetryCount = 3
+    $retryInterval = 5
+
+    if ($mirror) { 
+        $url = 'https://spotx-official.github.io/SpotX/run.ps1' 
+        $params += " -m"
+    }
+    else {
+        $url = 'https://raw.githubusercontent.com/SpotX-Official/SpotX/main/run.ps1'
+    }
+
+    for ($retry = 1; $retry -le $maxRetryCount; $retry++) {
+        try {
+            $response = iwr -useb $url
+            if ($response.StatusCode -eq 200) {
+                iex "& {$($response)} $params"
+                return
+            }
+        } catch {}
+
+        Start-Sleep -Seconds $retryInterval
+    }
+
+    exit
+}
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+Run-SpotX -params $args
